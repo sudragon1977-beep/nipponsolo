@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Nippon Solo Helper</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f0eadd">
+<link rel="apple-touch-icon" href="https://via.placeholder.com/192">
+
+<style>
+  :root { --bg-color: #f0eadd; --accent: #4a3f35; --confirm: #2e7d32; --token-green: #4caf50; --token-yellow: #fbc02d; --token-orange: #ef6c00; }
+  html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background: var(--bg-color); }
+  body { font-family: 'Pretendard', sans-serif; padding: 6px; color: var(--accent); box-sizing: border-box; }
+  
+  .container { max-width: 500px; margin: 0 auto; background: rgba(255,255,255,0.7); padding: 10px; border-radius: 20px; height: 98.5vh; display: flex; flex-direction: column; box-sizing: border-box; }
+  .section { margin-bottom: 6px; padding: 10px; background: #fff; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); flex-shrink: 0; }
+  .label { font-size: 11px; font-weight: bold; margin-bottom: 4px; color: #aaa; display: block; text-align: center; text-transform: uppercase; }
+
+  .goal-area { display: flex; justify-content: center; gap: 6px; margin-bottom: 4px; }
+  .goal-token { padding: 8px 4px; flex: 1; min-width: 60px; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; border: 3px solid; text-align: center; }
+  .token-0 { border-color: var(--token-green); color: var(--token-green); }
+  .token-1 { border-color: var(--token-yellow); color: #d4a017; }
+  .token-2 { border-color: var(--token-orange); color: var(--token-orange); }
+
+  .priority-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+  .meeple { width: 40px; height: 52px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; clip-path: polygon(32% 0%, 68% 0%, 82% 14%, 82% 28%, 100% 32%, 100% 68%, 82% 68%, 86% 100%, 56% 100%, 50% 86%, 44% 100%, 14% 100%, 18% 68%, 0% 68%, 0% 32%, 18% 28%, 18% 14%, 32% 0%); }
+  .meeple.white { clip-path: none; border-radius: 8px; border: 1px solid #333; box-sizing: border-box; }
+
+  .region-bar { display: flex; gap: 6px; }
+  .region-unit { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .region { width: 100%; height: 36px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border-radius: 6px; box-sizing: border-box; }
+  .region.white-border { border: 2px solid #ccc; }
+  .region-num { font-size: 26px; font-weight: 900; margin-top: 2px; color: #333; }
+
+  .card-area { display: flex; align-items: stretch; justify-content: center; gap: 12px; margin: 8px 0; height: 240px; flex-shrink: 0; }
+  .card-wrapper { flex: 1; display: flex; flex-direction: column; gap: 5px; position: relative; }
+  .card { flex: 1; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-weight: 900; cursor: pointer; border: 8px solid; text-align: center; transition: 0.2s; }
+  .deck { background: var(--accent); color: #fff; font-size: 32px; border-color: #333; }
+  .deck.empty { background: transparent; color: #bbb; border-style: dashed; border-color: #ccc; }
+  .open-card { background: white; border-color: var(--accent); font-size: 48px; }
+
+  .gauge-bg { width: 100%; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; margin-top: 2px; }
+  .gauge-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  
+  /* 카드 색상 및 히스토리 스타일 */
+  .card.special, .hist-item.special { background: #e3f2fd; color: #1565c0; border-color: #1565c0; }
+  .card.easy, .hist-item.easy { background: #e8f5e9; color: #2e7d32; border-color: #2e7d32; }
+  .card.normal, .hist-item.normal { background: #fffde7; color: #f9a825; border-color: #f9a825; }
+  .card.hard, .hist-item.hard { background: #fbe9e7; color: #d84315; border-color: #d84315; }
+  .card.number, .hist-item.number { background: #fff; color: #444; border-color: var(--accent); }
+
+  .controls { display: flex; justify-content: flex-end; align-items: center; margin-top: auto; padding-bottom: 4px; }
+  .undo-btn { background: #bbb; color: white; border: none; padding: 12px 24px; border-radius: 12px; font-weight: bold; }
+  .main-btn { width: 100%; margin-bottom: 8px; padding: 18px; font-size: 20px; background: #6d4c41; color: white; font-weight: bold; border-radius: 14px; border: none; box-shadow: 0 4px 0 #3e2723; }
+
+  .overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:100; justify-content:center; align-items:center; backdrop-filter: blur(4px); }
+  .confirm-modal { background: #fff; width: 85%; max-width: 320px; border-radius: 24px; padding: 25px; text-align: center; border: 4px solid var(--accent); }
+  
+  #historyOverlay { align-items: flex-end; }
+  .history-popup { background: #fff; width: 100%; max-width: 500px; border-radius: 30px 30px 0 0; padding: 25px 20px 40px 20px; box-sizing: border-box; transform: translateY(100%); transition: transform 0.3s ease-out; }
+  .history-popup.show { transform: translateY(0); }
+  .history-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .hist-item { height: 80px; border-radius: 15px; border: 3px solid; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; text-align: center; }
+  .hist-item.used { background: #eee !important; color: #bbb !important; border-color: #ddd !important; text-decoration: line-through; }
+
+  .diff-group { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+  .diff-btn { width: 100%; padding: 20px; border-radius: 14px; border: 3px solid #eee; font-size: 18px; font-weight: 800; background: #fff; }
+  .diff-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="container">
+  <button class="main-btn" onclick="openDiffModal()">새 게임 시작</button>
+  <div id="game" style="flex-grow:1; display:flex; flex-direction:column;">
+    <div class="section">
+      <div id="goalTokens" class="goal-area"></div>
+      <span class="label">지역 우선순위</span>
+      <div id="regions" class="region-bar"></div>
+    </div>
+    <div class="section">
+      <span class="label">미플 순서 (왼쪽 우선)</span>
+      <div id="priority" class="priority-row"></div>
+    </div>
+    <div class="card-area">
+      <div class="card-wrapper">
+        <div id="deck" class="card deck" onclick="draw()">DRAW</div>
+        <div class="gauge-bg"><div id="gauge" class="gauge-fill"></div></div>
+      </div>
+      <div class="card-wrapper" onclick="toggleHistory(true)">
+        <div id="lastCard" class="card open-card" style="border-style:dashed; border-color:#ccc; color:#ccc; font-size: 24px;">READY</div>
+        <div style="height:10px"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="undo-btn" onclick="undo()">UNDO</button>
+    </div>
+  </div>
+</div>
+
+<div id="diffOverlay" class="overlay">
+  <div class="confirm-modal">
+    <h2 style="margin:0; color:var(--accent);">목표 개수</h2>
+    <div class="diff-group">
+      <button id="d1" class="diff-btn" onclick="setDiff(1)">1개 (EASY)</button>
+      <button id="d2" class="diff-btn" onclick="setDiff(2)">2개 (NORMAL)</button>
+      <button id="d3" class="diff-btn" onclick="setDiff(3)">3개 (HARD)</button>
+    </div>
+    <button style="margin-top:20px; background:var(--accent); color:white; border:none; width:100%; padding:20px; border-radius:14px; font-weight:bold; font-size:20px;" onclick="initGame()">확인</button>
+  </div>
+</div>
+
+<div id="shuffleOverlay" class="overlay">
+  <div class="confirm-modal" style="width:70%;">
+    <h3>덱 셔플</h3>
+    <p>카드를 모두 사용했습니다.<br>덱과 미플 순서를 초기화할까요?</p>
+    <button class="main-btn" style="background:var(--confirm); box-shadow:none; margin:0;" onclick="shuffleOnly()">확인 (SHUFFLE)</button>
+  </div>
+</div>
+
+<div id="historyOverlay" class="overlay" onclick="toggleHistory(false)">
+  <div id="historyPopup" class="history-popup" onclick="event.stopPropagation(); toggleHistory(false);">
+    <span class="label" style="margin-bottom:15px;">전체 카드 현황</span>
+    <div id="historyGrid" class="history-grid"></div>
+  </div>
+</div>
+
+<script>
+const goalLabels = ["6 배", "6 기계", "6 기차", "6 연구", "7 석탄", "25 수입", "5 공장", "6 계약", "6 영향력"];
+const colors = [{n:'흰',c:'#fff',t:'#000',s:'white'},{n:'파',c:'#1e88e5',s:'blue'},{n:'회',c:'#9e9e9e',s:'grey'},{n:'노',c:'#fdd835',t:'#000',s:'yellow'},{n:'빨',c:'#e53935',s:'red'},{n:'검',c:'#212121',s:'black'}];
+const cardData = [
+  {id:1, l:'2', t:'number'}, {id:2, l:'3', t:'number'}, {id:3, l:'4', t:'number'},
+  {id:4, l:'기차', t:'special'}, {id:5, l:'시장', t:'special'},
+  {id:6, l:'어려움 ←', t:'hard'}, {id:7, l:'쉬움 ←', t:'easy'}, {id:8, l:'쉬움 →', t:'easy'}, {id:9, l:'보통 →', t:'normal'}
+];
+
+let state = { deck: [], opened: [], regs: [], prio: [], goals: [], tempDiff: 2 };
+
+function save() { localStorage.setItem('nippon_v2', JSON.stringify(state)); }
+function load() { 
+  const data = localStorage.getItem('nippon_v2'); 
+  if(data) { state = JSON.parse(data); render(); } else { openDiffModal(); }
+}
+
+function openDiffModal() { document.getElementById('diffOverlay').style.display = 'flex'; setDiff(state.tempDiff); }
+function setDiff(c) {
+  state.tempDiff = c;
+  [1,2,3].forEach(n => document.getElementById('d'+n).classList.toggle('active', n === c));
+}
+
+function initGame() {
+  document.getElementById('diffOverlay').style.display = 'none';
+  state.goals = [1,2,3,4,5,6,7,8,9].sort(()=>Math.random()-0.5).slice(0, state.tempDiff).sort((a,b)=>a-b);
+  state.regs = [...colors].sort(()=>Math.random()-0.5).slice(0,4);
+  shuffleOnly();
+}
+
+function shuffleOnly() {
+  state.deck = [...cardData].sort(()=>Math.random()-0.5);
+  state.opened = [];
+  state.prio = [...colors].sort(()=>Math.random()-0.5);
+  document.getElementById('shuffleOverlay').style.display = 'none';
+  render();
+}
+
+function render(){
+  document.getElementById('goalTokens').innerHTML = state.goals.map((num, i) => `<div class="goal-token token-${i}">${goalLabels[num-1]}</div>`).join('');
+  const sortedRegs = [...state.regs].sort((a,b)=>state.prio.findIndex(p=>p.n===a.n)-state.prio.findIndex(p=>p.n===b.n));
+  document.getElementById('regions').innerHTML = state.regs.map(r=>`
+    <div class="region-unit">
+      <div class="region ${r.c==='#fff'?'white-border':''}" style="background:${r.c};color:${r.t||'#fff'}">${r.n}</div>
+      <div class="region-num">${sortedRegs.findIndex(sr=>sr.n===r.n)+1}</div>
+    </div>`).join('');
+  document.getElementById('priority').innerHTML = state.prio.map(p=>`<div class="meeple ${p.s}" style="background:${p.c};color:${p.t||'#fff'}">${p.n}</div>`).join('');
+  
+  const deckDiv = document.getElementById('deck');
+  if(state.deck.length === 0) { deckDiv.innerText = 'SHUFFLE'; deckDiv.classList.add('empty'); } 
+  else { deckDiv.innerText = 'DRAW'; deckDiv.classList.remove('empty'); }
+
+  document.getElementById('gauge').style.width = (state.deck.length / cardData.length * 100) + '%';
+  
+  const last = state.opened[state.opened.length-1];
+  const lastDiv = document.getElementById('lastCard');
+  lastDiv.className = 'card open-card'; 
+  if(last){ 
+    lastDiv.innerText = last.l; 
+    lastDiv.classList.add(last.t);
+    lastDiv.style.borderStyle = 'solid'; 
+    lastDiv.style.fontSize = (last.l.length > 2) ? '32px' : '64px';
+  } else { 
+    lastDiv.innerText = 'READY'; lastDiv.style.borderStyle = 'dashed'; lastDiv.style.color = '#ccc'; lastDiv.style.fontSize = '24px';
+  }
+  save();
+}
+
+function draw(){ 
+  if(state.deck.length > 0){ state.opened.push(state.deck.shift()); render(); } 
+  else { document.getElementById('shuffleOverlay').style.display = 'flex'; } 
+}
+
+function undo(){ if(state.opened.length > 0){ state.deck.unshift(state.opened.pop()); render(); } }
+
+function toggleHistory(show) {
+  const overlay = document.getElementById('historyOverlay');
+  const popup = document.getElementById('historyPopup');
+  if(show) {
+    document.getElementById('historyGrid').innerHTML = cardData.map(card => {
+      const isUsed = state.opened.some(o => o.id === card.id);
+      return `<div class="hist-item ${card.t} ${isUsed ? 'used' : ''}">${card.l}</div>`;
+    }).join('');
+    overlay.style.display = 'flex';
+    setTimeout(() => popup.classList.add('show'), 10);
+  } else {
+    popup.classList.remove('show');
+    setTimeout(() => overlay.style.display = 'none', 300);
+  }
+}
+
+load();
+</script>
+</body>
+</html>
